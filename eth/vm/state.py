@@ -32,6 +32,9 @@ from eth.abc import (
 from eth.constants import (
     MAX_PREV_HEADER_DEPTH,
 )
+from eth.db.witness import (
+    Witness,
+)
 from eth._utils.datatypes import (
     Configurable,
 )
@@ -179,7 +182,7 @@ class BaseState(Configurable, StateAPI):
     def lock_changes(self) -> None:
         self._account_db.lock_changes()
 
-    def persist(self) -> Dict[Address, Tuple[bool, Tuple[int]]]:
+    def persist(self) -> Witness:
         return self._account_db.persist()
 
     def get_witness_hashes(self):

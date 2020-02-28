@@ -334,10 +334,40 @@ class BlockAPI(rlp.Serializable, ABC):
         ...
 
 
+class WitnessAPI(ABC):
+    @property
+    @abstractmethod
+    def hashes(self) -> Tuple[Hash32]:
+        ...
+
+    @property
+    @abstractmethod
+    def accounts_queried(self) -> Collection[Address]:
+        ...
+
+    @property
+    @abstractmethod
+    def account_bytecodes_queried(self) -> Tuple[Address]:
+        ...
+
+    @abstractmethod
+    def get_slots_queried(self, address: Address) -> Tuple[int, ...]:
+        ...
+
+    @abstractmethod
+    @property
+    def total_slots_queried(self) -> int:
+        """
+        Summed across all accounts, how many storage slots were queried?
+        """
+        ...
+
+
 class BlockImportResult(NamedTuple):
     imported_block: BlockAPI
     new_canonical_blocks: Tuple[BlockAPI, ...]
     old_canonical_blocks: Tuple[BlockAPI, ...]
+    witness: WitnessAPI
 
 
 class SchemaAPI(ABC):

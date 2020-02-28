@@ -467,7 +467,7 @@ class Chain(BaseChain):
             )
 
         base_header_for_import = self.create_header_from_parent(parent_header)
-        imported_block = self.get_vm(base_header_for_import).import_block(block)
+        imported_block, witness = self.get_vm(base_header_for_import).import_block(block)
 
         # Validate the imported block.
         if perform_validation:
@@ -504,6 +504,7 @@ class Chain(BaseChain):
             imported_block=imported_block,
             new_canonical_blocks=new_canonical_blocks,
             old_canonical_blocks=old_canonical_blocks
+            witness=witness,
         )
 
     #

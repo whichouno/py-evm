@@ -54,6 +54,9 @@ from eth.db.journal import (
 from eth.db.storage import (
     AccountStorageDB,
 )
+from eth.db.witness import (
+    Witness,
+)
 from eth.typing import (
     JournalDBCheckpoint,
 )
@@ -266,7 +269,7 @@ class AccountDB(AccountDatabaseAPI):
             except KeyError:
                 raise MissingBytecode(code_hash) from KeyError
             finally:
-                if code_hash in self.get_read_node_hashes():
+                if code_hash in self._get_accessed_node_hashes():
                     self._accessed_bytecodes.add(address)
 
     def set_code(self, address: Address, code: bytes) -> None:
@@ -411,7 +414,7 @@ class AccountDB(AccountDatabaseAPI):
 
         return self.state_root
 
-    def persist(self) -> None:
+    def persist(self) -> Witness:
         self.make_state_root()
 
         # persist storage
@@ -433,8 +436,8 @@ class AccountDB(AccountDatabaseAPI):
                     f"is missing for hash 0x{new_root.hex()}."
                 )
 
-        # make copy of witness metadata before clearing
-        witness_metadata = self.get_witness_metadata()
+        # generate witness (copy) before clearing the underlying data
+        witness = self._get_witness()
 
         # reset local storage trackers
         self._account_stores = {}
@@ -452,13 +455,13 @@ class AccountDB(AccountDatabaseAPI):
             self._batchdb.commit_to(write_batch, apply_deletes=False)
         self._root_hash_at_last_persist = new_root_hash
 
-        return witness_metadata
+        return witness
 
-    def get_read_node_hashes(self):
+    def _get_accessed_node_hashes(self):
         return self._raw_store_db.keys_read
 
     @to_dict
-    def get_witness_metadata(self) -> Dict[Address, Tuple[bool, Tuple[int]]]:
+    def _get_witness_metadata(self) -> Dict[Address, Tuple[bool, Tuple[int, ...]]]:
         for address in self._accessed_accounts:
             did_access_bytecode = address in self._accessed_bytecodes
             if address in self._account_stores:
@@ -466,6 +469,12 @@ class AccountDB(AccountDatabaseAPI):
             else:
                 accessed_storage_slots = tuple()
             yield address, (did_access_bytecode, accessed_storage_slots)
+
+    def _get_witness(self) -> Witness:
+        """
+        This creates a copy, so that underlying changes do not affect the returned Witness.
+        """
+        return Witness(self._get_accessed_node_hashes(), self._get_witness_metadata())
 
     def _validate_generated_root(self) -> None:
         db_diff = self._journaldb.diff()

@@ -52,6 +52,7 @@ from eth.constants import (
     MAX_UNCLES,
 )
 from eth.db.trie import make_trie_root_and_nodes
+from eth.db.witness import Witness
 from eth.exceptions import (
     HeaderNotFound,
 )
@@ -263,7 +264,7 @@ class VM(Configurable, VirtualMachineAPI):
     #
     # Mining
     #
-    def import_block(self, block: BlockAPI) -> BlockAPI:
+    def import_block(self, block: BlockAPI) -> Tuple[BlockAPI, Witness]:
         if self.get_block().number != block.number:
             raise ValidationError(
                 f"This VM can only import blocks at number #{self.get_block().number},"
@@ -306,29 +307,12 @@ class VM(Configurable, VirtualMachineAPI):
     def mine_block(self, *args: Any, **kwargs: Any) -> BlockAPI:
         packed_block = self.pack_block(self.get_block(), *args, **kwargs)
 
-        final_block = self.finalize_block(packed_block)
+        final_block, witness = self.finalize_block(packed_block)
 
         # Perform validation
         self.validate_block(final_block)
 
-        return final_block
-
-    def _save_witness(
-            self,
-            final_block: BlockAPI,
-            witness_metadata: Dict[Address, Tuple[bool, Tuple[int]]]) -> None:
-
-        witness_hashes = self.state.get_witness_hashes()
-        self.logger.debug(
-            "%s reads %d unique node hashes, %d addresses, %d bytecodes, and %d storage slots",
-            final_block,
-            len(witness_hashes),
-            len(witness_metadata),
-            len([1 for bytecode_accessed, _slots in witness_metadata.values() if bytecode_accessed]),
-            sum(len(slots_accessed) for _code, slots_accessed in witness_metadata.values()),
-        )
-        self.chaindb.db[b'witnesshashes:'+final_block.hash] = b''.join(witness_hashes)
-        #TODO log if any nodes are not covered by addresses, slots, and bytecodes
+        return final_block, witness
 
     def set_block_transactions(self,
                                base_block: BlockAPI,
@@ -381,7 +365,7 @@ class VM(Configurable, VirtualMachineAPI):
             else:
                 self.logger.debug("No uncle reward given to %s", uncle.coinbase)
 
-    def finalize_block(self, block: BlockAPI) -> BlockAPI:
+    def finalize_block(self, block: BlockAPI) -> Tuple[BlockAPI, Witness]:
         if block.number > 0:
             snapshot = self.state.snapshot()
             try:
@@ -394,13 +378,20 @@ class VM(Configurable, VirtualMachineAPI):
 
         # We need to call `persist` here since the state db batches
         # all writes until we tell it to write to the underlying db
-        witness_metadata = self.state.persist()
+        witness = self.state.persist()
 
         final_block = block.copy(header=block.header.copy(state_root=self.state.state_root))
 
-        self._save_witness(final_block, witness_metadata)
+        self.logger.debug(
+            "%s reads %d unique node hashes, %d addresses, %d bytecodes, and %d storage slots",
+            final_block,
+            len(witness.hashes),
+            len(witness.accounts_queried),
+            len(witness.account_bytecodes_queried),
+            witness.total_slots_queried,
+        )
 
-        return final_block
+        return final_block, witness
 
     def pack_block(self, block: BlockAPI, *args: Any, **kwargs: Any) -> BlockAPI:
         if 'uncles' in kwargs:

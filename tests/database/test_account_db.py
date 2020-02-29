@@ -251,35 +251,45 @@ def test_witness_index(account_db):
     account_db.set_code(THIRD_ADDRESS, b'fake')
     account_db.get_code(THIRD_ADDRESS)
 
-    metadata = account_db.get_witness_metadata()
+    witness_index = account_db.persist()
 
     # addresses were accessed
-    assert ADDRESS in metadata
-    assert OTHER_ADDRESS in metadata
-    assert THIRD_ADDRESS in metadata
+    assert ADDRESS in witness_index.accounts_queried
+    assert OTHER_ADDRESS in witness_index.accounts_queried
+    assert THIRD_ADDRESS in witness_index.accounts_queried
 
-    # note that although code was accessed, it was empty, and the empty hash is well-known
-    assert metadata[ADDRESS] == (False, ())
+    # note that although code was accessed, it was empty, so is not considered accessed,
+    #   because the empty hash is well-known
+    assert ADDRESS not in witness_index.account_bytecodes_queried
+    assert witness_index.get_slots_queried(ADDRESS) == ()
     # setting storage data requires reading storage data, so a set is also a read
-    assert metadata[OTHER_ADDRESS] == (False, (1,))
-    # note that although code was set, it was in cache, so doesn't need to be in witness
-    assert metadata[THIRD_ADDRESS] == (False, ())
+    assert OTHER_ADDRESS not in witness_index.account_bytecodes_queried
+    assert witness_index.get_slots_queried(OTHER_ADDRESS) == (1,)
+    # note that although code was accessed, it was created during execution,
+    #   so it doesn't need to be listed in the witness index
+    assert THIRD_ADDRESS not in witness_index.account_bytecodes_queried
+    assert witness_index.get_slots_queried(THIRD_ADDRESS) == ()
 
-    # reset metadata trackers
-    account_db.persist()
-    assert len(account_db.get_witness_metadata()) == 0
+    # Note that a new witness from a new persist call should always be empty
+    witness_index = account_db.persist()
+    assert len(witness_index.hashes) == 0
+    assert len(witness_index.accounts_queried) == 0
 
-    account_db.get_storage(OTHER_ADDRESS, 1)
+    account_db.get_storage(OTHER_ADDRESS, 2)
     account_db.get_code(THIRD_ADDRESS)
 
-    metadata_round2 = account_db.get_witness_metadata()
+    witness_index2 = account_db.persist()
 
     # addresses were accessed
-    assert OTHER_ADDRESS in metadata_round2
-    assert THIRD_ADDRESS in metadata_round2
+    assert OTHER_ADDRESS in witness_index2.accounts_queried
+    assert THIRD_ADDRESS in witness_index2.accounts_queried
     # this address was not accessed this round
-    assert ADDRESS not in metadata_round2
+    assert ADDRESS not in witness_index2.accounts_queried
 
-    assert metadata_round2[OTHER_ADDRESS] == (False, (1,))
-    # Since code was not set this round, the code read must be included in the witness
-    assert metadata_round2[THIRD_ADDRESS] == (True, ())
+    # New storage slot accessed, no code access
+    assert OTHER_ADDRESS not in witness_index2.account_bytecodes_queried
+    assert witness_index2.get_slots_queried(OTHER_ADDRESS) == (2,)
+    # Since code was accessed this round, and not created this round,
+    #   the code for this account must be listed in the witness
+    assert THIRD_ADDRESS in witness_index2.account_bytecodes_queried
+    assert witness_index2.get_slots_queried(THIRD_ADDRESS) == ()

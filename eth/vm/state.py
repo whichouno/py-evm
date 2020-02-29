@@ -1,6 +1,5 @@
 import contextlib
 from typing import (
-    Dict,
     Iterator,
     Tuple,
     Type,

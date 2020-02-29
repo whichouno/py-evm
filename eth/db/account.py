@@ -407,10 +407,11 @@ class AccountDB(AccountDatabaseAPI):
         self._journaldb.persist()
 
         diff = self._journaltrie.diff()
-        # In addition to squashing (which is redundant here), this context manager causes
-        # an atomic commit of the changes, so exceptions will revert the trie
-        with self._trie.squash_changes() as memory_trie:
-            self._apply_account_diff_without_proof(diff, memory_trie)
+        if diff.deleted_keys() or diff.pending_items():
+            # In addition to squashing (which is redundant here), this context manager causes
+            # an atomic commit of the changes, so exceptions will revert the trie
+            with self._trie.squash_changes() as memory_trie:
+                self._apply_account_diff_without_proof(diff, memory_trie)
 
         self._journaltrie.reset()
         self._trie_cache.reset_cache()

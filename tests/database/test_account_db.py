@@ -247,7 +247,7 @@ def test_witness_metadata(account_db):
     account_db.get_balance(ADDRESS)
     account_db.get_code(ADDRESS)
     account_db.set_storage(OTHER_ADDRESS, 1, 321)
-    THIRD_ADDRESS = b'c'*20
+    THIRD_ADDRESS = b'c' * 20
     account_db.set_code(THIRD_ADDRESS, b'fake')
     account_db.get_code(THIRD_ADDRESS)
 

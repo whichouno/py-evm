@@ -28,12 +28,10 @@ from eth.abc import (
     StateAPI,
     TransactionContextAPI,
     TransactionExecutorAPI,
+    WitnessAPI,
 )
 from eth.constants import (
     MAX_PREV_HEADER_DEPTH,
-)
-from eth.db.witness import (
-    Witness,
 )
 from eth._utils.datatypes import (
     Configurable,
@@ -182,15 +180,8 @@ class BaseState(Configurable, StateAPI):
     def lock_changes(self) -> None:
         self._account_db.lock_changes()
 
-    def persist(self) -> Witness:
+    def persist(self) -> WitnessAPI:
         return self._account_db.persist()
-
-    def get_witness_hashes(self):
-        return set(self._account_db.get_read_node_hashes())
-
-    def get_witness_metadata(self) -> Dict[Address, Tuple[bool, Tuple[int]]]:
-        # which addresses were accessed, and did we access their bytecode and which storage slots?
-        return self._account_db.get_witness_metadata()
 
     #
     # Access self.prev_hashes (Read-only)

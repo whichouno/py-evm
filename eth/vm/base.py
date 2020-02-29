@@ -4,7 +4,6 @@ import logging
 from typing import (
     Any,
     ClassVar,
-    Dict,
     Iterable,
     Iterator,
     Optional,
@@ -22,7 +21,6 @@ from eth_typing import (
     Hash32,
 )
 from eth_utils import (
-    encode_hex,
     ValidationError,
 )
 import rlp
@@ -52,7 +50,7 @@ from eth.constants import (
     MAX_UNCLES,
 )
 from eth.db.trie import make_trie_root_and_nodes
-from eth.db.witness import Witness
+from eth.db.witness import WitnessAPI
 from eth.exceptions import (
     HeaderNotFound,
 )
@@ -264,7 +262,7 @@ class VM(Configurable, VirtualMachineAPI):
     #
     # Mining
     #
-    def import_block(self, block: BlockAPI) -> Tuple[BlockAPI, Witness]:
+    def import_block(self, block: BlockAPI) -> Tuple[BlockAPI, WitnessAPI]:
         if self.get_block().number != block.number:
             raise ValidationError(
                 f"This VM can only import blocks at number #{self.get_block().number},"
@@ -304,7 +302,7 @@ class VM(Configurable, VirtualMachineAPI):
 
         return self.mine_block()
 
-    def mine_block(self, *args: Any, **kwargs: Any) -> BlockAPI:
+    def mine_block(self, *args: Any, **kwargs: Any) -> Tuple[BlockAPI, WitnessAPI]:
         packed_block = self.pack_block(self.get_block(), *args, **kwargs)
 
         final_block, witness = self.finalize_block(packed_block)
@@ -365,7 +363,7 @@ class VM(Configurable, VirtualMachineAPI):
             else:
                 self.logger.debug("No uncle reward given to %s", uncle.coinbase)
 
-    def finalize_block(self, block: BlockAPI) -> Tuple[BlockAPI, Witness]:
+    def finalize_block(self, block: BlockAPI) -> Tuple[BlockAPI, WitnessAPI]:
         if block.number > 0:
             snapshot = self.state.snapshot()
             try:

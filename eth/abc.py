@@ -6,6 +6,7 @@ from typing import (
     Any,
     Callable,
     ClassVar,
+    Collection,
     ContextManager,
     Dict,
     Iterable,
@@ -337,7 +338,7 @@ class BlockAPI(rlp.Serializable, ABC):
 class WitnessAPI(ABC):
     @property
     @abstractmethod
-    def hashes(self) -> Tuple[Hash32]:
+    def hashes(self) -> Tuple[Hash32, ...]:
         ...
 
     @property
@@ -347,15 +348,15 @@ class WitnessAPI(ABC):
 
     @property
     @abstractmethod
-    def account_bytecodes_queried(self) -> Tuple[Address]:
+    def account_bytecodes_queried(self) -> Tuple[Address, ...]:
         ...
 
     @abstractmethod
     def get_slots_queried(self, address: Address) -> Tuple[int, ...]:
         ...
 
-    @abstractmethod
     @property
+    @abstractmethod
     def total_slots_queried(self) -> int:
         """
         Summed across all accounts, how many storage slots were queried?
@@ -1661,6 +1662,13 @@ class AccountStorageDatabaseAPI(ABC):
         """
         ...
 
+    @abstractmethod
+    def get_accessed_slots(self) -> Tuple[int, ...]:
+        """
+        List all the slots that had been accessed since object creation.
+        """
+        ...
+
 
 class AccountDatabaseAPI(ABC):
     """
@@ -1865,7 +1873,7 @@ class AccountDatabaseAPI(ABC):
         ...
 
     @abstractmethod
-    def persist(self) -> None:
+    def persist(self) -> WitnessAPI:
         """
         Send changes to underlying database, including the trie state
         so that it will forever be possible to read the trie from this checkpoint.
@@ -2222,7 +2230,7 @@ class StateAPI(ConfigurableAPI):
         ...
 
     @abstractmethod
-    def persist(self) -> None:
+    def persist(self) -> WitnessAPI:
         """
         Persist the current state to the database.
         """
@@ -2520,14 +2528,14 @@ class VirtualMachineAPI(ConfigurableAPI):
     # Mining
     #
     @abstractmethod
-    def import_block(self, block: BlockAPI) -> BlockAPI:
+    def import_block(self, block: BlockAPI) -> Tuple[BlockAPI, WitnessAPI]:
         """
         Import the given block to the chain.
         """
         ...
 
     @abstractmethod
-    def mine_block(self, *args: Any, **kwargs: Any) -> BlockAPI:
+    def mine_block(self, *args: Any, **kwargs: Any) -> Tuple[BlockAPI, WitnessAPI]:
         """
         Mine the current block. Proxies to self.pack_block method.
         """
@@ -2548,7 +2556,7 @@ class VirtualMachineAPI(ConfigurableAPI):
     # Finalization
     #
     @abstractmethod
-    def finalize_block(self, block: BlockAPI) -> BlockAPI:
+    def finalize_block(self, block: BlockAPI) -> Tuple[BlockAPI, WitnessAPI]:
         """
         Perform any finalization steps like awarding the block mining reward,
         and persisting the final state root.
@@ -3336,7 +3344,7 @@ class MiningChainAPI(ChainAPI):
         ...
 
     @abstractmethod
-    def mine_block(self, *args: Any, **kwargs: Any) -> BlockAPI:
+    def mine_block(self, *args: Any, **kwargs: Any) -> Tuple[BlockAPI, WitnessAPI]:
         """
         Mines the current block. Proxies to the current Virtual Machine.
         See VM. :meth:`~eth.vm.base.VM.mine_block`

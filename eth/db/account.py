@@ -1,5 +1,6 @@
 from lru import LRU
 from typing import (
+    cast,
     Dict,
     Iterable,
     Set,
@@ -31,12 +32,14 @@ from eth.abc import (
     AccountStorageDatabaseAPI,
     AtomicDatabaseAPI,
     DatabaseAPI,
+    WitnessAPI,
 )
 from eth.constants import (
     BLANK_ROOT_HASH,
     EMPTY_SHA3,
 )
 from eth.db.accesslog import (
+    KeyAccessLoggerAtomicDB,
     KeyAccessLoggerDB,
 )
 from eth.db.batch import (
@@ -117,7 +120,7 @@ class AccountDB(AccountDatabaseAPI):
         AccountDB synchronizes the snapshot/revert/persist of both of the
         journals.
         """
-        self._raw_store_db = KeyAccessLoggerDB(db, log_missing_keys=False)
+        self._raw_store_db = KeyAccessLoggerAtomicDB(db, log_missing_keys=False)
         self._batchdb = BatchDB(self._raw_store_db)
         self._batchtrie = BatchDB(self._raw_store_db, read_through_deletes=True)
         self._journaldb = JournalDB(self._batchdb)
@@ -414,7 +417,7 @@ class AccountDB(AccountDatabaseAPI):
 
         return self.state_root
 
-    def persist(self) -> Witness:
+    def persist(self) -> WitnessAPI:
         self.make_state_root()
 
         # persist storage
@@ -457,11 +460,11 @@ class AccountDB(AccountDatabaseAPI):
 
         return witness
 
-    def _get_accessed_node_hashes(self):
-        return self._raw_store_db.keys_read
+    def _get_accessed_node_hashes(self) -> Set[Hash32]:
+        return cast(Set[Hash32], self._raw_store_db.keys_read)
 
     @to_dict
-    def _get_witness_metadata(self) -> Dict[Address, Tuple[bool, Tuple[int, ...]]]:
+    def _get_witness_metadata(self) -> Iterable[Tuple[Address, Tuple[bool, Tuple[int, ...]]]]:
         for address in self._accessed_accounts:
             did_access_bytecode = address in self._accessed_bytecodes
             if address in self._account_stores:

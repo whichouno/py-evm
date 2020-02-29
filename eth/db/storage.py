@@ -418,7 +418,7 @@ class AccountStorageDB(AccountStorageDatabaseAPI):
                 f"StorageDB had a dirty journal when it needed to be clean: {journal_diff!r}"
             )
 
-    def get_accessed_slots(self) -> Tuple[int]:
+    def get_accessed_slots(self) -> Tuple[int, ...]:
         return tuple(self._accessed_slots)
 
     @property

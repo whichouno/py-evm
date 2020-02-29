@@ -14,6 +14,7 @@ from eth.abc import (
     WitnessAPI,
 )
 
+
 class Witness(WitnessAPI):
     def __init__(
             self,
@@ -24,7 +25,7 @@ class Witness(WitnessAPI):
         self._accounts_metadata_queried = accounts_metadata_queried
 
     @property
-    def hashes(self) -> Tuple[Hash32]:
+    def hashes(self) -> Tuple[Hash32, ...]:
         return self._trie_node_hashes
 
     @property
@@ -32,7 +33,7 @@ class Witness(WitnessAPI):
         return self._accounts_metadata_queried.keys()
 
     @property
-    def account_bytecodes_queried(self) -> Tuple[Address]:
+    def account_bytecodes_queried(self) -> Tuple[Address, ...]:
         return tuple(
             address
             for address, (was_bytecode_queried, _slots) in self._accounts_metadata_queried.items()

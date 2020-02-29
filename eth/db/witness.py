@@ -11,11 +11,11 @@ from eth_typing import (
 )
 
 from eth.abc import (
-    WitnessAPI,
+    WitnessIndexAPI,
 )
 
 
-class Witness(WitnessAPI):
+class WitnessIndex(WitnessIndexAPI):
     def __init__(
             self,
             witness_hashes: Set[Hash32],

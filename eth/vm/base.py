@@ -50,7 +50,7 @@ from eth.constants import (
     MAX_UNCLES,
 )
 from eth.db.trie import make_trie_root_and_nodes
-from eth.db.witness import WitnessAPI
+from eth.db.witness import WitnessIndexAPI
 from eth.exceptions import (
     HeaderNotFound,
 )
@@ -262,7 +262,7 @@ class VM(Configurable, VirtualMachineAPI):
     #
     # Mining
     #
-    def import_block(self, block: BlockAPI) -> Tuple[BlockAPI, WitnessAPI]:
+    def import_block(self, block: BlockAPI) -> Tuple[BlockAPI, WitnessIndexAPI]:
         if self.get_block().number != block.number:
             raise ValidationError(
                 f"This VM can only import blocks at number #{self.get_block().number},"
@@ -302,15 +302,15 @@ class VM(Configurable, VirtualMachineAPI):
 
         return self.mine_block()
 
-    def mine_block(self, *args: Any, **kwargs: Any) -> Tuple[BlockAPI, WitnessAPI]:
+    def mine_block(self, *args: Any, **kwargs: Any) -> Tuple[BlockAPI, WitnessIndexAPI]:
         packed_block = self.pack_block(self.get_block(), *args, **kwargs)
 
-        final_block, witness = self.finalize_block(packed_block)
+        final_block, witness_index = self.finalize_block(packed_block)
 
         # Perform validation
         self.validate_block(final_block)
 
-        return final_block, witness
+        return final_block, witness_index
 
     def set_block_transactions(self,
                                base_block: BlockAPI,
@@ -363,7 +363,7 @@ class VM(Configurable, VirtualMachineAPI):
             else:
                 self.logger.debug("No uncle reward given to %s", uncle.coinbase)
 
-    def finalize_block(self, block: BlockAPI) -> Tuple[BlockAPI, WitnessAPI]:
+    def finalize_block(self, block: BlockAPI) -> Tuple[BlockAPI, WitnessIndexAPI]:
         if block.number > 0:
             snapshot = self.state.snapshot()
             try:
@@ -376,20 +376,20 @@ class VM(Configurable, VirtualMachineAPI):
 
         # We need to call `persist` here since the state db batches
         # all writes until we tell it to write to the underlying db
-        witness = self.state.persist()
+        witness_index = self.state.persist()
 
         final_block = block.copy(header=block.header.copy(state_root=self.state.state_root))
 
         self.logger.debug(
             "%s reads %d unique node hashes, %d addresses, %d bytecodes, and %d storage slots",
             final_block,
-            len(witness.hashes),
-            len(witness.accounts_queried),
-            len(witness.account_bytecodes_queried),
-            witness.total_slots_queried,
+            len(witness_index.hashes),
+            len(witness_index.accounts_queried),
+            len(witness_index.account_bytecodes_queried),
+            witness_index.total_slots_queried,
         )
 
-        return final_block, witness
+        return final_block, witness_index
 
     def pack_block(self, block: BlockAPI, *args: Any, **kwargs: Any) -> BlockAPI:
         if 'uncles' in kwargs:

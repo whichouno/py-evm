@@ -335,7 +335,7 @@ class BlockAPI(rlp.Serializable, ABC):
         ...
 
 
-class WitnessAPI(ABC):
+class WitnessIndexAPI(ABC):
     @property
     @abstractmethod
     def hashes(self) -> Tuple[Hash32, ...]:
@@ -368,7 +368,7 @@ class BlockImportResult(NamedTuple):
     imported_block: BlockAPI
     new_canonical_blocks: Tuple[BlockAPI, ...]
     old_canonical_blocks: Tuple[BlockAPI, ...]
-    witness: WitnessAPI
+    witness_index: WitnessIndexAPI
 
 
 class SchemaAPI(ABC):
@@ -1873,7 +1873,7 @@ class AccountDatabaseAPI(ABC):
         ...
 
     @abstractmethod
-    def persist(self) -> WitnessAPI:
+    def persist(self) -> WitnessIndexAPI:
         """
         Send changes to underlying database, including the trie state
         so that it will forever be possible to read the trie from this checkpoint.
@@ -2230,7 +2230,7 @@ class StateAPI(ConfigurableAPI):
         ...
 
     @abstractmethod
-    def persist(self) -> WitnessAPI:
+    def persist(self) -> WitnessIndexAPI:
         """
         Persist the current state to the database.
         """
@@ -2528,14 +2528,14 @@ class VirtualMachineAPI(ConfigurableAPI):
     # Mining
     #
     @abstractmethod
-    def import_block(self, block: BlockAPI) -> Tuple[BlockAPI, WitnessAPI]:
+    def import_block(self, block: BlockAPI) -> Tuple[BlockAPI, WitnessIndexAPI]:
         """
         Import the given block to the chain.
         """
         ...
 
     @abstractmethod
-    def mine_block(self, *args: Any, **kwargs: Any) -> Tuple[BlockAPI, WitnessAPI]:
+    def mine_block(self, *args: Any, **kwargs: Any) -> Tuple[BlockAPI, WitnessIndexAPI]:
         """
         Mine the current block. Proxies to self.pack_block method.
         """
@@ -2556,7 +2556,7 @@ class VirtualMachineAPI(ConfigurableAPI):
     # Finalization
     #
     @abstractmethod
-    def finalize_block(self, block: BlockAPI) -> Tuple[BlockAPI, WitnessAPI]:
+    def finalize_block(self, block: BlockAPI) -> Tuple[BlockAPI, WitnessIndexAPI]:
         """
         Perform any finalization steps like awarding the block mining reward,
         and persisting the final state root.
@@ -3344,7 +3344,7 @@ class MiningChainAPI(ChainAPI):
         ...
 
     @abstractmethod
-    def mine_block(self, *args: Any, **kwargs: Any) -> Tuple[BlockAPI, WitnessAPI]:
+    def mine_block(self, *args: Any, **kwargs: Any) -> Tuple[BlockAPI, WitnessIndexAPI]:
         """
         Mines the current block. Proxies to the current Virtual Machine.
         See VM. :meth:`~eth.vm.base.VM.mine_block`

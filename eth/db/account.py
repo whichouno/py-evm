@@ -32,7 +32,7 @@ from eth.abc import (
     AccountStorageDatabaseAPI,
     AtomicDatabaseAPI,
     DatabaseAPI,
-    WitnessAPI,
+    WitnessIndexAPI,
 )
 from eth.constants import (
     BLANK_ROOT_HASH,
@@ -58,7 +58,7 @@ from eth.db.storage import (
     AccountStorageDB,
 )
 from eth.db.witness import (
-    Witness,
+    WitnessIndex,
 )
 from eth.typing import (
     JournalDBCheckpoint,
@@ -417,7 +417,7 @@ class AccountDB(AccountDatabaseAPI):
 
         return self.state_root
 
-    def persist(self) -> WitnessAPI:
+    def persist(self) -> WitnessIndexAPI:
         self.make_state_root()
 
         # persist storage
@@ -440,7 +440,7 @@ class AccountDB(AccountDatabaseAPI):
                 )
 
         # generate witness (copy) before clearing the underlying data
-        witness = self._get_witness()
+        witness_index = self._get_witness_index()
 
         # reset local storage trackers
         self._account_stores = {}
@@ -458,7 +458,7 @@ class AccountDB(AccountDatabaseAPI):
             self._batchdb.commit_to(write_batch, apply_deletes=False)
         self._root_hash_at_last_persist = new_root_hash
 
-        return witness
+        return witness_index
 
     def _get_accessed_node_hashes(self) -> Set[Hash32]:
         return cast(Set[Hash32], self._raw_store_db.keys_read)
@@ -473,11 +473,11 @@ class AccountDB(AccountDatabaseAPI):
                 accessed_storage_slots = tuple()
             yield address, (did_access_bytecode, accessed_storage_slots)
 
-    def _get_witness(self) -> Witness:
+    def _get_witness_index(self) -> WitnessIndex:
         """
-        This creates a copy, so that underlying changes do not affect the returned Witness.
+        This creates a copy, so that underlying changes do not affect the returned WitnessIndex.
         """
-        return Witness(self._get_accessed_node_hashes(), self._get_witness_metadata())
+        return WitnessIndex(self._get_accessed_node_hashes(), self._get_witness_metadata())
 
     def _validate_generated_root(self) -> None:
         db_diff = self._journaldb.diff()

@@ -243,7 +243,7 @@ def test_has_changes_even_if_storage_root_returns_to_old_value(account_db):
     assert repeated_storage_root == original_storage_root
 
 
-def test_witness_metadata(account_db):
+def test_witness_index(account_db):
     account_db.get_balance(ADDRESS)
     account_db.get_code(ADDRESS)
     account_db.set_storage(OTHER_ADDRESS, 1, 321)

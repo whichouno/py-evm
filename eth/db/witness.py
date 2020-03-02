@@ -1,6 +1,7 @@
 from typing import (
     Collection,
     Dict,
+    NamedTuple,
     Set,
     Tuple,
 )
@@ -15,11 +16,16 @@ from eth.abc import (
 )
 
 
+class AccountQueryTracker(NamedTuple):
+    did_query_bytecode: bool
+    slots_queried: Tuple[int, ...]
+
+
 class WitnessIndex(WitnessIndexAPI):
     def __init__(
             self,
             witness_hashes: Set[Hash32],
-            accounts_metadata_queried: Dict[Address, Tuple[bool, Tuple[int, ...]]]) -> None:
+            accounts_metadata_queried: Dict[Address, AccountQueryTracker]) -> None:
 
         self._trie_node_hashes = tuple(witness_hashes)
         self._accounts_metadata_queried = accounts_metadata_queried
@@ -36,17 +42,17 @@ class WitnessIndex(WitnessIndexAPI):
     def account_bytecodes_queried(self) -> Tuple[Address, ...]:
         return tuple(
             address
-            for address, (was_bytecode_queried, _slots) in self._accounts_metadata_queried.items()
-            if was_bytecode_queried
+            for address, query_tracker in self._accounts_metadata_queried.items()
+            if query_tracker.did_query_bytecode
         )
 
     def get_slots_queried(self, address: Address) -> Tuple[int, ...]:
         try:
-            _bytecode, slots_queried = self._accounts_metadata_queried[address]
+            query_tracker = self._accounts_metadata_queried[address]
         except KeyError:
             return tuple()
         else:
-            return slots_queried
+            return query_tracker.slots_queried
 
     @property
     def total_slots_queried(self) -> int:
@@ -54,8 +60,8 @@ class WitnessIndex(WitnessIndexAPI):
         Summed across all accounts, how many storage slots were queried?
         """
         return sum(
-            len(slots_queried)
-            for _bytecode, slots_queried in self._accounts_metadata_queried.values()
+            len(query_tracker.slots_queried)
+            for query_tracker in self._accounts_metadata_queried.values()
         )
 
     # TODO do we need a `has_hash()` method? If so, maybe store internally as a set

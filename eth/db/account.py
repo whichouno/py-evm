@@ -58,6 +58,7 @@ from eth.db.storage import (
     AccountStorageDB,
 )
 from eth.db.witness import (
+    AccountQueryTracker,
     WitnessIndex,
 )
 from eth.typing import (
@@ -465,14 +466,14 @@ class AccountDB(AccountDatabaseAPI):
         return cast(Set[Hash32], self._raw_store_db.keys_read)
 
     @to_dict
-    def _get_witness_metadata(self) -> Iterable[Tuple[Address, Tuple[bool, Tuple[int, ...]]]]:
+    def _get_witness_metadata(self) -> Iterable[Tuple[Address, AccountQueryTracker]]:
         for address in self._accessed_accounts:
             did_access_bytecode = address in self._accessed_bytecodes
             if address in self._account_stores:
                 accessed_storage_slots = self._account_stores[address].get_accessed_slots()
             else:
                 accessed_storage_slots = tuple()
-            yield address, (did_access_bytecode, accessed_storage_slots)
+            yield address, AccountQueryTracker(did_access_bytecode, accessed_storage_slots)
 
     def _get_witness_index(self) -> WitnessIndex:
         """

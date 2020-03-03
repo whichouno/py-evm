@@ -68,7 +68,7 @@ def test_mine_block_issues_block_reward(chain):
         pytest.skip("Only test mining on a MiningChain")
         return
 
-    block, _ = chain.mine_block()
+    block = chain.mine_block().block
     vm = chain.get_vm()
     coinbase_balance = vm.state.get_balance(block.header.coinbase)
     assert coinbase_balance == vm.get_block_reward()
@@ -101,8 +101,8 @@ def test_import_block(chain, funded_address, funded_address_private_key):
 
 def test_validate_header_succeeds_but_pow_fails(pow_consensus_chain, noproof_consensus_chain):
     # Create to "structurally valid" blocks that are not backed by PoW
-    block1, _ = noproof_consensus_chain.mine_block()
-    block2, _ = noproof_consensus_chain.mine_block()
+    block1 = noproof_consensus_chain.mine_block().block
+    block2 = noproof_consensus_chain.mine_block().block
 
     vm = pow_consensus_chain.get_vm(block2.header)
 
@@ -114,9 +114,9 @@ def test_validate_header_succeeds_but_pow_fails(pow_consensus_chain, noproof_con
 
 
 def test_validate_header_fails_on_invalid_parent(noproof_consensus_chain):
-    block1, _ = noproof_consensus_chain.mine_block()
+    block1 = noproof_consensus_chain.mine_block().block
     noproof_consensus_chain.mine_block()
-    block3, _ = noproof_consensus_chain.mine_block()
+    block3 = noproof_consensus_chain.mine_block().block
 
     vm = noproof_consensus_chain.get_vm(block3.header)
 

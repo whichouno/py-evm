@@ -77,7 +77,7 @@ def test_mining_tools_proof_of_work_mining(base_vm_class):
 
     chain = genesis(ChainClass)
 
-    block, _ = chain.mine_block()
+    block = chain.mine_block().block
     check_pow(
         block.number,
         block.header.mining_hash,

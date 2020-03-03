@@ -39,6 +39,7 @@ from eth._utils.rlp import (
 )
 from eth.abc import (
     BlockAPI,
+    BlockEvalResult,
     MiningChainAPI,
     AtomicDatabaseAPI,
     BlockHeaderAPI,
@@ -52,7 +53,6 @@ from eth.abc import (
     StateAPI,
     SignedTransactionAPI,
     UnsignedTransactionAPI,
-    WitnessIndexAPI,
 )
 from eth.consensus import (
     ConsensusContext,
@@ -468,7 +468,8 @@ class Chain(BaseChain):
             )
 
         base_header_for_import = self.create_header_from_parent(parent_header)
-        imported_block, witness_index = self.get_vm(base_header_for_import).import_block(block)
+        block_result = self.get_vm(base_header_for_import).import_block(block)
+        imported_block = block_result.block
 
         # Validate the imported block.
         if perform_validation:
@@ -505,7 +506,7 @@ class Chain(BaseChain):
             imported_block=imported_block,
             new_canonical_blocks=new_canonical_blocks,
             old_canonical_blocks=old_canonical_blocks,
-            witness_index=witness_index,
+            witness_index=block_result.witness_index,
         )
 
     #
@@ -663,14 +664,15 @@ class MiningChain(Chain, MiningChainAPI):
         self.header = self.ensure_header()
         return result
 
-    def mine_block(self, *args: Any, **kwargs: Any) -> Tuple[BlockAPI, WitnessIndexAPI]:
-        mined_block, witness_index = self.get_vm(self.header).mine_block(*args, **kwargs)
+    def mine_block(self, *args: Any, **kwargs: Any) -> BlockEvalResult:
+        mine_result = self.get_vm(self.header).mine_block(*args, **kwargs)
+        mined_block = mine_result.block
 
         self.validate_block(mined_block)
 
         self.chaindb.persist_block(mined_block)
         self.header = self.create_header_from_parent(mined_block.header)
-        return mined_block, witness_index
+        return mine_result
 
     def get_vm(self, at_header: BlockHeaderAPI = None) -> VirtualMachineAPI:
         if at_header is None:

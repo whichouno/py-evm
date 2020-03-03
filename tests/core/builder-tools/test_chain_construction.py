@@ -117,7 +117,7 @@ def test_chain_builder_enable_pow_mining():
         enable_pow_mining(),
         genesis(),
     )
-    block, _ = chain.mine_block()
+    block = chain.mine_block().block
     check_pow(
         block.number,
         block.header.mining_hash,
@@ -144,7 +144,7 @@ def test_chain_builder_disable_pow_check():
         disable_pow_check(),
         genesis(),
     )
-    block, _ = chain.mine_block()
+    block = chain.mine_block().block
     with pytest.raises(ValidationError, match='mix hash mismatch'):
         check_pow(
             block.number,

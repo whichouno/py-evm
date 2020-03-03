@@ -364,7 +364,20 @@ class WitnessIndexAPI(ABC):
         ...
 
 
+class BlockEvalResult(NamedTuple):
+    """
+    After evaluating a block using the VirtualMachine, this information
+    becomes available.
+    """
+    block: BlockAPI
+    witness_index: WitnessIndexAPI
+
+
 class BlockImportResult(NamedTuple):
+    """
+    After importing and persisting a block into the active chain, this information
+    becomes available.
+    """
     imported_block: BlockAPI
     new_canonical_blocks: Tuple[BlockAPI, ...]
     old_canonical_blocks: Tuple[BlockAPI, ...]
@@ -2528,14 +2541,14 @@ class VirtualMachineAPI(ConfigurableAPI):
     # Mining
     #
     @abstractmethod
-    def import_block(self, block: BlockAPI) -> Tuple[BlockAPI, WitnessIndexAPI]:
+    def import_block(self, block: BlockAPI) -> BlockEvalResult:
         """
         Import the given block to the chain.
         """
         ...
 
     @abstractmethod
-    def mine_block(self, *args: Any, **kwargs: Any) -> Tuple[BlockAPI, WitnessIndexAPI]:
+    def mine_block(self, *args: Any, **kwargs: Any) -> BlockEvalResult:
         """
         Mine the current block. Proxies to self.pack_block method.
         """
@@ -2556,7 +2569,7 @@ class VirtualMachineAPI(ConfigurableAPI):
     # Finalization
     #
     @abstractmethod
-    def finalize_block(self, block: BlockAPI) -> Tuple[BlockAPI, WitnessIndexAPI]:
+    def finalize_block(self, block: BlockAPI) -> BlockEvalResult:
         """
         Perform any finalization steps like awarding the block mining reward,
         and persisting the final state root.
@@ -3344,7 +3357,7 @@ class MiningChainAPI(ChainAPI):
         ...
 
     @abstractmethod
-    def mine_block(self, *args: Any, **kwargs: Any) -> Tuple[BlockAPI, WitnessIndexAPI]:
+    def mine_block(self, *args: Any, **kwargs: Any) -> BlockEvalResult:
         """
         Mines the current block. Proxies to the current Virtual Machine.
         See VM. :meth:`~eth.vm.base.VM.mine_block`

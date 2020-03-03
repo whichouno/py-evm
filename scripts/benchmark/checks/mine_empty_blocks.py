@@ -47,5 +47,5 @@ class MineEmptyBlocksBenchmark(BaseBenchmark):
     def mine_empty_blocks(self, chain: MiningChain, number_blocks: int) -> None:
 
         for _ in range(1, number_blocks + 1):
-            block, _witness_index = chain.mine_block()
-            logging.debug(format_block(block))
+            block_result = chain.mine_block()
+            logging.debug(format_block(block_result.block))

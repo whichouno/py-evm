@@ -21,7 +21,8 @@ def state(chain_without_block_validation):
 def test_block_properties(chain_without_block_validation):
     chain = chain_without_block_validation
     vm = chain.get_vm()
-    block_import_result = chain.import_block(vm.mine_block()[0])
+    mined_block = vm.mine_block().block
+    block_import_result = chain.import_block(mined_block)
     block = block_import_result.imported_block
 
     assert vm.state.coinbase == block.header.coinbase

@@ -28,6 +28,7 @@ import rlp
 from eth.abc import (
     AtomicDatabaseAPI,
     BlockAPI,
+    BlockEvalResult,
     BlockHeaderAPI,
     ChainContextAPI,
     ChainDatabaseAPI,
@@ -50,7 +51,6 @@ from eth.constants import (
     MAX_UNCLES,
 )
 from eth.db.trie import make_trie_root_and_nodes
-from eth.db.witness import WitnessIndexAPI
 from eth.exceptions import (
     HeaderNotFound,
 )
@@ -262,7 +262,7 @@ class VM(Configurable, VirtualMachineAPI):
     #
     # Mining
     #
-    def import_block(self, block: BlockAPI) -> Tuple[BlockAPI, WitnessIndexAPI]:
+    def import_block(self, block: BlockAPI) -> BlockEvalResult:
         if self.get_block().number != block.number:
             raise ValidationError(
                 f"This VM can only import blocks at number #{self.get_block().number},"
@@ -302,15 +302,15 @@ class VM(Configurable, VirtualMachineAPI):
 
         return self.mine_block()
 
-    def mine_block(self, *args: Any, **kwargs: Any) -> Tuple[BlockAPI, WitnessIndexAPI]:
+    def mine_block(self, *args: Any, **kwargs: Any) -> BlockEvalResult:
         packed_block = self.pack_block(self.get_block(), *args, **kwargs)
 
-        final_block, witness_index = self.finalize_block(packed_block)
+        block_result = self.finalize_block(packed_block)
 
         # Perform validation
-        self.validate_block(final_block)
+        self.validate_block(block_result.block)
 
-        return final_block, witness_index
+        return block_result
 
     def set_block_transactions(self,
                                base_block: BlockAPI,
@@ -363,7 +363,7 @@ class VM(Configurable, VirtualMachineAPI):
             else:
                 self.logger.debug("No uncle reward given to %s", uncle.coinbase)
 
-    def finalize_block(self, block: BlockAPI) -> Tuple[BlockAPI, WitnessIndexAPI]:
+    def finalize_block(self, block: BlockAPI) -> BlockEvalResult:
         if block.number > 0:
             snapshot = self.state.snapshot()
             try:
@@ -389,7 +389,7 @@ class VM(Configurable, VirtualMachineAPI):
             witness_index.total_slots_queried,
         )
 
-        return final_block, witness_index
+        return BlockEvalResult(final_block, witness_index)
 
     def pack_block(self, block: BlockAPI, *args: Any, **kwargs: Any) -> BlockAPI:
         if 'uncles' in kwargs:

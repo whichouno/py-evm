@@ -312,7 +312,6 @@ class AccountStorageDB(AccountStorageDatabaseAPI):
             return rlp.decode(encoded_value, sedes=rlp.sedes.big_endian_int)
 
     def set(self, slot: int, value: int) -> None:
-        self._accessed_slots.add(slot)
         key = int_to_big_endian(slot)
         if value:
             self._journal_storage[key] = rlp.encode(value)

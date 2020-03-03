@@ -186,7 +186,7 @@ Now that we have the building blocks available, let's put it all together and mi
 
     # We have to finalize the block first in order to be able read the
     # attributes that are important for the PoW algorithm
-    block = chain.get_vm().finalize_block(chain.get_block())
+    block, _witness_index = chain.get_vm().finalize_block(chain.get_block())
 
     # based on mining_hash, block number and difficulty we can perform
     # the actual Proof of Work (PoW) mechanism to mine the correct
@@ -373,7 +373,7 @@ zero value transfer transaction.
   (<ByzantiumBlock(#Block #1...)
   >>> # We have to finalize the block first in order to be able read the
   >>> # attributes that are important for the PoW algorithm
-  >>> block = chain.get_vm().finalize_block(chain.get_block())
+  >>> block, _witness_index = chain.get_vm().finalize_block(chain.get_block())
 
   >>> # based on mining_hash, block number and difficulty we can perform
   >>> # the actual Proof of Work (PoW) mechanism to mine the correct
@@ -384,5 +384,6 @@ zero value transfer transaction.
   ...     block.header.difficulty
   ... )
 
-  >>> chain.mine_block(mix_hash=mix_hash, nonce=nonce)
+  >>> block, _witness_index = chain.mine_block(mix_hash=mix_hash, nonce=nonce)
+  >>> block
   <ByzantiumBlock(#Block #1-0x41f6..2913)>

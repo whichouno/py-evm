@@ -125,7 +125,8 @@ class BaseERC20Benchmark(BaseBenchmark):
                    num_tx: int) -> BaseBlock:
         for _ in range(1, num_tx + 1):
             self._apply_transaction(chain)
-        return chain.mine_block()
+        block, _witness_index = chain.mine_block()
+        return block
 
     def _deploy_simple_token(self, chain: MiningChain) -> None:
         # Instantiate the contract

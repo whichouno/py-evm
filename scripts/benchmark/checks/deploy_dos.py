@@ -126,7 +126,8 @@ class BaseDOSContractBenchmark(BaseBenchmark):
         for _ in range(1, num_tx + 1):
             self._apply_transaction(chain)
 
-        return chain.mine_block()
+        block, _witness_index = chain.mine_block()
+        return block
 
     def deploy_dos_contract(self, chain: MiningChain) -> None:
         # Instantiate the contract

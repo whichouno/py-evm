@@ -100,7 +100,7 @@ class SimpleValueTransferBenchmark(BaseBenchmark):
 
         for i in range(1, num_blocks + 1):
             num_tx = chain.get_block().header.gas_limit // SIMPLE_VALUE_TRANSFER_GAS_COST
-            block = self.mine_block(chain, i, num_tx)
+            block, _witness_index = self.mine_block(chain, i, num_tx)
             total_num_tx = total_num_tx + len(block.transactions)
             total_gas_used = total_gas_used + block.header.gas_used
 

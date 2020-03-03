@@ -64,4 +64,4 @@ class WitnessIndex(WitnessIndexAPI):
             for query_tracker in self._accounts_metadata_queried.values()
         )
 
-    # TODO do we need a `has_hash()` method? If so, maybe store internally as a set
+    # TODO do we need a `has_hash()` method for trie nodes? If so, maybe store internally as a set
